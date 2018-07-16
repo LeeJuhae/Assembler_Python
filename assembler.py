@@ -16,7 +16,7 @@ class assembler:
         self.loadInputFile("input.txt")
 
         self.pass1()
-        #self.test()
+        self.printSymbolTable("symbolTable.txt")
     '''
     inputFile을 읽어들여서 lineList에 저장한다.
     :param inputFile : input 파일 이름 
@@ -26,7 +26,6 @@ class assembler:
         lines = f.readlines()
         for line in lines:
             self.lineList.append(line)
-
     '''
     pass1 과정을 수행한다.
     '''
@@ -56,13 +55,22 @@ class assembler:
         '''Section별 symbolTable 생성'''
         for i in range(len(self.TokenList)):
             for j in range(len(self.TokenList[i].tokenList)):
+               # print(str(i)+ " " + str(j))
                 self.TokenList[i].makeSymbolTable(j)
+                '''operator가 EQU일때 symbol의 location값 변경'''
+                # if self.TokenList[i].getToken[j].opeator == "EQU":
+                #     if self.TokenList[i].getToken[j].operand[0] != "*":
+                #         tempLoc1 = self.symTabList[i].search(self.TokenList[i].getToken(j).operand.split('-')[0])
+                #         tempLoc2 = self.symTabList[i].search(self.TokenList[i].getToken(j).operand.split('-')[1])
+                #         self.symTabList[i].modifySymbol(self.TokenList[i].getToken(j).label, tempLoc2 - tempLoc1)
 
-    def test(self):
-        for i in range(len(self.TokenList)):
-            for j in range(len(self.TokenList[i].tokenList)):
-                print(self.TokenList[i].getToken(j).operator)
-
+    def printSymbolTable(self, fileName):
+        f = open(fileName, 'w')
+        for i in range(len(self.symTabList)):
+            for j in range(len(self.symTabList[i].symbolList)):
+                f.write(self.symTabList[i].symbolList[j]+"\t\t")
+                f.write(str(self.symTabList[i].locationList[j])+"\r\n")
+        f.close()
 
 
 a = assembler("inst.data")
