@@ -16,6 +16,8 @@ class assembler:
 
         self.pass1()
         self.printSymbolTable("symbolTable.txt")
+
+        self.pass2()
     '''
     inputFile을 읽어들여서 lineList에 저장한다.
     :param inputFile : input 파일 이름 
@@ -26,7 +28,7 @@ class assembler:
         for line in lines:
             self.lineList.append(line)
     '''
-    pass1 과정을 수행한다.
+    pass1 과정을 수행.
     1) 프로그램 소스를 스캔하여 토큰단위로 분리한 뒤 토큰테이블 생성
     2) 프로그램 소스 각 라인에 location 값 지정
     3) label을 symbolTable에 정리
@@ -76,9 +78,29 @@ class assembler:
         for i in range(len(self.symTabList)):
             for j in range(len(self.symTabList[i].symbolList)):
                 f.write(self.symTabList[i].symbolList[j]+"\t\t")
-                f.write(str.format("%X" % (self.symTabList[i].locationList[j]))+"\r\n")
+                f.write(str.format("%X" % (self.symTabList[i].locationList[j]))+"\n")
             f.write("\n")
         f.close()
+
+    '''
+        pass2 과정을 수행.
+        1) 분석된 내용을 바탕으로 object code를 생성하여 codeList에 저장.
+    '''
+    def pass2(self):
+        for i in range(len(self.TokenList)):
+            for j in range(len(self.TokenList[i].tokenList)):
+                self.TokenList[i].makeObjectCode(j)
+        # codeList 생성
+        for i in range(len(self.TokenList)):
+            code = ""
+            text = ""
+            size = 0
+            progLength = 0
+            for j in range(len(self.TokenList[i].tokenList)):
+                assem_operator = self.TokenList[i].getToken(j).operator
+                # Header record
+                # if  assem_operator == "START" or assem_operator =="CSECT":
+                #     for k in
 
 
 a = assembler("inst.data")
