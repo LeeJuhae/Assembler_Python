@@ -6,6 +6,7 @@ class assembler:
     lineList = list()
     TokenList = list()
     symTabList = list()
+    codeList = list()
     '''
     클래스 초기화. instruction Talbe을 초기화와 동시에 세팅한다.
     :param instFile : instruction 명세를 작성한 파일 이름.
@@ -18,6 +19,7 @@ class assembler:
         self.printSymbolTable("symbolTable.txt")
 
         self.pass2()
+        self.printObjectCode("output.txt")
     '''
     inputFile을 읽어들여서 lineList에 저장한다.
     :param inputFile : input 파일 이름 
@@ -90,6 +92,7 @@ class assembler:
         for i in range(len(self.TokenList)):
             for j in range(len(self.TokenList[i].tokenList)):
                 self.TokenList[i].makeObjectCode(j)
+
         # codeList 생성
         for i in range(len(self.TokenList)):
             code = ""
@@ -98,9 +101,77 @@ class assembler:
             progLength = 0
             for j in range(len(self.TokenList[i].tokenList)):
                 assem_operator = self.TokenList[i].getToken(j).operator
+
                 # Header record
-                # if  assem_operator == "START" or assem_operator =="CSECT":
-                #     for k in
+                if assem_operator == "START" or assem_operator == "CSECT":
+                    for k in range(len(self.TokenList[i].tokenList)-1, -1, -1):
+                        if self.TokenList[i].getToken(k).operator != "EQU":
+                            if self.TokenList[i].getToken(k).operator != "RESB":
+                                progLength = self.TokenList[i].getToken(k).location + self.TokenList[i].getToken(k).byteSize
+                            else:
+                                progLength = self.TokenList[i].getToken(k).location + int(self.TokenList[i].getToken(k).operand)
+                            break
+                    code = "H" + self.TokenList[i].getToken(j).label + "\t" + str.format("%06X" % self.TokenList[i].getToken(j).location)
+                    code += str.format("%06X" %progLength) + "\n"
+                # Define record
+                elif assem_operator == "EXTDEF":
+                    code += "D"
+                    assem_def = str()
+                    for k in range(len(self.TokenList[i].getToken(j).operand.split(','))):
+                        assem_def = self.TokenList[i].getToken(j).operand.split(',')[k]
+                        code += assem_def + str.format("%06X" % self.symTabList[i].search(assem_def))
+                    code += "\n"
+                # Refer record
+                elif assem_operator == "EXTREF":
+                    code += "R"
+                    assem_ref = str()
+                    for k in range(len(self.TokenList[i].getToken(j).operand.split(','))):
+                        assem_ref = self.TokenList[i].getToken(j).operand.split(',')[k]
+                        code += assem_ref
+                    code += "\n"
+                # Text Record
+                else:
+                    if len(self.TokenList[i].getToken(j).objectCode) != 0:
+                        if len(text) == 0:
+                            code += "T" +str.format("%06X" % self.TokenList[i].getToken(j).location)
+                        text += self.TokenList[i].getToken(j).objectCode
+                        size += self.TokenList[i].getToken(j).byteSize
+                        if j == (len(self.TokenList[i].tokenList)-1):
+                            code += str.format("%02X" % size) + text + "\n"
+                        elif (size + self.TokenList[i].getToken(j + 1).byteSize >= 30) or ((len(self.TokenList[i].getToken(j + 1).objectCode) == 0) and self.TokenList[i].getToken(
+                                j + 1).operator != "END"):
+                            code += str.format("%02X" % size) + text + "\n"
+                            text = ""
+                            size = 0
+                    if j == (len(self.TokenList[i].tokenList)-1):
+                        # Modification record
+                        for k in range(len(self.TokenList[i].tokenList)):
+                            if self.TokenList[i].getToken(k).operator[0] == "+":
+                                code += "M" + str.format("%06X" % (self.TokenList[i].getToken(k).location + 1))
+                                code += "05+" + self.TokenList[i].getToken(k).operand.split(',')[0] + "\n"
+                            elif self.TokenList[i].getToken(k).operator == "WORD":
+                                for m in range(len(self.TokenList[i].getToken(k).operand.split('-'))):
+                                    temp_str = self.TokenList[i].getToken(k).operand.split('-')[m]
+                                    if m == 0 :
+                                        code += "M" + str.format("%06X" % self.TokenList[i].getToken(k).location) + "06+" + temp_str+"\n"
+                                    elif m == 1:
+                                        code += "M" + str.format(
+                                            "%06X" % self.TokenList[i].getToken(k).location) + "06-" + temp_str + "\n"
+                        #End record
+                        code += "E"
+                        if i == 0:
+                            code += str.format("%06X" % self.TokenList[0].getToken(0).location)
+                        code += "\n\n"
+                        self.codeList.append(code)
+    '''
+        작성된 codeList를 출력형태에 맞게 출력.
+        :param fileName : 저장되는 파일 이름
+    '''
+    def printObjectCode(self, fileName):
+        f = open(fileName, 'w')
+        for i in range(len(self.TokenList)):
+            f.write(self.codeList[i])
+        f.close()
 
 
 a = assembler("inst.data")
